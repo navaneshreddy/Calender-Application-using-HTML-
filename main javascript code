@@ -1,0 +1,162 @@
+let state = {
+  year: 2025,
+  month: 11, // December (0-11)
+  events: []
+};
+
+const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function initApp() {
+  showPage('years-page');
+  updateTitles();
+  renderWeeks();
+  renderCalendar();
+  renderEvents();
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
+function selectYear(year) {
+  state.year = year;
+  document.getElementById('months-year').textContent = year;
+  showPage('months-page');
+}
+
+function goToYears() { showPage('years-page'); }
+
+function selectMonth(month) {
+  state.month = month;
+  updateTitles();
+  renderWeeks();
+  showPage('weeks-page');
+}
+
+function goToMonths() { showPage('months-page'); }
+
+function goToWeeks() {
+  renderWeeks();
+  showPage('weeks-page');
+}
+
+function goToCalendar() {
+  renderCalendar();
+  showPage('calendar-page');
+}
+
+function prevMonth() {
+  state.month--;
+  if (state.month < 0) { state.month = 11; state.year--; }
+  updateTitles();
+  renderWeeks();
+  renderCalendar();
+}
+
+function nextMonth() {
+  state.month++;
+  if (state.month > 11) { state.month = 0; state.year++; }
+  updateTitles();
+  renderWeeks();
+  renderCalendar();
+}
+
+function updateTitles() {
+  const title = `${months[state.month]} ${state.year}`;
+  document.getElementById('weeks-title').textContent = title;
+  document.getElementById('calendar-title').textContent = title;
+}
+
+function renderWeeks() {
+  const grid = document.getElementById('weeks-grid');
+  grid.innerHTML = '';
+  const weeksCount = Math.ceil((new Date(state.year, state.month + 1, 0).getDate() + new Date(state.year, state.month, 1).getDay()) / 7);
+  for (let i = 1; i <= weeksCount; i++) {
+    grid.innerHTML += `
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="week-card bg-white p-5 rounded-3 shadow text-center" onclick="goToCalendar()">
+          <h4 class="fw-bold text-indigo-700">Week ${i}</h4>
+          <p class="text-muted">Click to view calendar</p>
+        </div>
+      </div>`;
+  }
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+  const firstDay = new Date(state.year, state.month, 1).getDay();
+  const daysInMonth = new Date(state.year, state.month + 1, 0).getDate();
+
+  let day = 1;
+  for (let i = 0; i < 42; i++) {
+    if (i < firstDay || day > daysInMonth) {
+      grid.innerHTML += `<div class="col"></div>`;
+    } else {
+      const dateStr = `${state.year}-${String(state.month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const hasEv = state.events.some(e => e.date === dateStr);
+      const isToday = day === 14 && state.month === 11 && state.year === 2025;
+      grid.innerHTML += `
+        <div class="col">
+          <div class="day-cell bg-white ${isToday ? 'today' : ''}">
+            ${day}
+            ${hasEv ? '<div class="event-dot"></div>' : ''}
+          </div>
+        </div>`;
+      day++;
+    }
+  }
+}
+
+
+
+function addEvent() {
+  const date = document.getElementById('eventDate').value;
+  const title = document.getElementById('eventTitle').value.trim();
+  if (!date || !title) return alert("Please enter date and title!");
+
+  state.events.push({
+    id: Date.now(),
+    date,
+    title,
+    desc: document.getElementById('eventDesc').value.trim()
+  });
+
+  document.getElementById('eventDate').value = '';
+  document.getElementById('eventTitle').value = '';
+  document.getElementById('eventDesc').value = '';
+
+  renderEvents();
+  renderCalendar();
+}
+
+
+function deleteEvent(id) {
+  state.events = state.events.filter(e => e.id !== id);
+  renderEvents();
+  renderCalendar();
+}
+
+function renderEvents() {
+  const list = document.getElementById('eventsList');
+  const noMsg = document.getElementById('noEvents');
+  if (state.events.length === 0) {
+    list.innerHTML = '';
+    noMsg.style.display = 'block';
+    return;
+  }
+
+
+  noMsg.style.display = 'none';
+  list.innerHTML = state.events
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .map(e => `
+      <div class="border-start border-primary border-4 ps-3 py-2 bg-light rounded">
+        <h6 class="fw-bold text-indigo-700">${e.title}</h6>
+        ${e.desc ? `<p class="small text-muted">${e.desc}</p>` : ''}
+        <small class="text-muted">📅 ${new Date(e.date).toLocaleDateString()}</small>
+        <button class="btn btn-sm btn-danger w-100 mt-2" onclick="deleteEvent(${e.id})">Delete</button>
+      </div>
+    `).join('');
+}
