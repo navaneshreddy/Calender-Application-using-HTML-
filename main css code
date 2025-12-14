@@ -1,0 +1,4 @@
+.background_image {
+    background-image: url(https://media.tenor.com/f1MU3WdTAiUAAAAM/phineas-and-ferb-calendar.gif);
+    background-size: cover;
+}
